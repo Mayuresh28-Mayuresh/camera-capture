@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Camera Access and Image Capture</title>
+</head>
+<body>
+    <h1>Camera Access and Image Capture</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <br>
+    <button id="startButton">Start Camera</button>
+    <button id="stopButton" style="display: none;">Stop Capture</button>
+    <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
+
+    <script>
+        // Set up media stream and interval timer variables
+        let videoStream;
+        let intervalId = null;
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+
+        startButton.onclick = async () => {
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = videoStream;
+                startIntervalCapture();
+            } catch (err) {
+                console.error('Error accessing the camera:', err);
+            }
+        };
+
+        function startIntervalCapture() {
+            // Hide the "Start Camera" button and show the "Stop Capture" button
+            startButton.style.display = 'none';
+            stopButton.style.display = 'inline-block';
+
+            // Start capturing images at the specified interval (2 seconds in this case)
+            intervalId = setInterval(captureImageAndUpload, 2000);
+        }
+
+        function captureImageAndUpload() {
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL('image/jpeg');
+            saveImage(imageData);
+        }
+
+        stopButton.onclick = () => {
+            // Show the "Start Camera" button and hide the "Stop Capture" button
+            startButton.style.display = 'inline-block';
+            stopButton.style.display = 'none';
+
+            // Stop the interval capturing
+            clearInterval(intervalId);
+        }
+
+        function saveImage(imageData) {
+            // Send imageData to the server using AJAX or Fetch API
+            // Modify the URL below with the appropriate server-side PHP script
+            const uploadUrl = 'upload.php';
+            fetch(uploadUrl, {
+                method: 'POST',
+                body: JSON.stringify({ image: imageData }), // Ensure the key is "image"
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('Image successfully captured and uploaded!');
+                } else {
+                    console.error('Failed to upload the image.');
+                }
+            })
+            .catch(error => {
+                console.error('Error uploading the image:', error);
+            });
+        }
+    </script>
+</body>
+</html>
